@@ -63,6 +63,10 @@ class Settings(BaseSettings):
     # Lower = stricter. Tunable; 0.0 = identical, 1.0 = orthogonal.
     dedup_distance_threshold: float = Field(default=0.15)
 
+    # --- Weekly clustering / report (Milestones 9–10) ---
+    # Stories with last_seen_at within this many days count as "this week".
+    weekly_window_days: int = Field(default=7)
+
     # Gemini (Google AI Studio free tier) — active now.
     gemini_api_key: str = Field(default="")
     gemini_embedding_model: str = Field(default="gemini-embedding-001")

@@ -4,7 +4,7 @@ _Last updated: 2026-05-30_
 
 ## Current Milestone
 
-**Milestone 8 — LangGraph Daily Workflow** (awaiting user validation)
+**Milestone 9 — Weekly Clustering** (awaiting user validation)
 
 ## Completed Milestones
 
@@ -23,10 +23,11 @@ _Last updated: 2026-05-30_
   embedded via Gemini, 1536-dim, real cosine distances)
 - **Milestone 7 — Deduplication Engine** ✅ (committed `20b8dc0`; deterministic
   merge test + real run with no false merges)
+- **Milestone 8 — LangGraph Daily Workflow** ✅ (committed `af084b9`; graph
+  runs end-to-end and is idempotent)
 
 ## Pending Milestones
 
-- Milestone 9 — Weekly Clustering
 - Milestone 10 — Weekly Report Generation
 - Milestone 11 — Scheduling
 - Milestone 12 — API Layer
@@ -114,6 +115,17 @@ _Last updated: 2026-05-30_
   on persisted rows. `run_daily_workflow(query, limit)` invokes it and returns
   per-step count summary. langgraph pinned at 1.2.2. Validated end-to-end:
   fetched 30 → saved 15 → embedded 15 → 13 stories created + 2 sources merged.
+- **Weekly clustering:** `app/services/clustering.py`. Embedding-based
+  zero-shot categorization into fixed `WEEKLY_CATEGORIES` (OpenAI, Anthropic,
+  Funding, Research, Startups). Each category has a text anchor
+  (`CATEGORY_ANCHORS`) embedded once via the active provider; each story's
+  representative embedding (its primary source article) is assigned to the
+  nearest anchor by cosine (= dot product on normalized vectors); written to
+  `stories.category`. `cluster_weekly_stories(db)` covers stories with
+  last_seen_at within `weekly_window_days` (7); accepts an explicit `stories`
+  list for test isolation. Chosen over per-story LLM calls (free, deterministic,
+  reuses embeddings). Validated: 23 real stories → all 5 categories
+  (OpenAI 7 / Anthropic 1 / Funding 1 / Research 2 / Startups 12).
 
 ## Database Schema Decisions
 
@@ -167,6 +179,7 @@ Managed via `backend/.env` (template: `backend/.env.example`):
 | `EMBEDDING_BATCH_SIZE` | 100 | Texts per embed API call / DB commit |
 | `EMBEDDING_INPUT_MAX_CHARS` | 8000 | Max chars of article text per embed |
 | `DEDUP_DISTANCE_THRESHOLD` | 0.15 | Max cosine distance to merge articles |
+| `WEEKLY_WINDOW_DAYS` | 7 | Window for weekly clustering / report |
 | `GEMINI_API_KEY` | _(empty)_ | Gemini free-tier key (active) |
 | `GEMINI_EMBEDDING_MODEL` | gemini-embedding-001 | Gemini embedding model |
 | `GEMINI_CHAT_MODEL` | gemini-2.0-flash | Gemini chat model |
