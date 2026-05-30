@@ -58,6 +58,11 @@ class Settings(BaseSettings):
     # Max characters of article text sent to the embedding model.
     embedding_input_max_chars: int = Field(default=8000)
 
+    # --- Deduplication (Milestone 7) ---
+    # Max cosine distance for two articles to be considered the same story.
+    # Lower = stricter. Tunable; 0.0 = identical, 1.0 = orthogonal.
+    dedup_distance_threshold: float = Field(default=0.15)
+
     # Gemini (Google AI Studio free tier) — active now.
     gemini_api_key: str = Field(default="")
     gemini_embedding_model: str = Field(default="gemini-embedding-001")

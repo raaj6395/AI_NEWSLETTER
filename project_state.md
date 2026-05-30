@@ -4,7 +4,7 @@ _Last updated: 2026-05-30_
 
 ## Current Milestone
 
-**Milestone 6 — Embedding Pipeline** (awaiting user validation)
+**Milestone 7 — Deduplication Engine** (awaiting user validation)
 
 ## Completed Milestones
 
@@ -19,10 +19,11 @@ _Last updated: 2026-05-30_
   AI provider to Gemini free tier.
 - **Milestone 5 — Ingestion Pipeline** ✅ (committed `c8c05d4`; 15 real
   articles ingested, re-run idempotent)
+- **Milestone 6 — Embedding Pipeline** ✅ (committed `a6596fc`; 15 articles
+  embedded via Gemini, 1536-dim, real cosine distances)
 
 ## Pending Milestones
 
-- Milestone 7 — Deduplication Engine
 - Milestone 8 — LangGraph Daily Workflow
 - Milestone 9 — Weekly Clustering
 - Milestone 10 — Weekly Report Generation
@@ -89,6 +90,20 @@ _Last updated: 2026-05-30_
   (queries `embedding IS NULL` then delegates). Vectors L2-normalized.
   Validated: all 15 articles embedded via Gemini (1536-dim), real cosine
   distances (~0.22). google-genai pinned at 2.7.0.
+- **Deduplication engine:** `app/services/dedup.py`. Incremental greedy
+  nearest-neighbour by cosine distance: for each article, `find_matching_story`
+  finds the nearest already-assigned article (join articles↔story_sources,
+  `embedding <=> q` ordered, limit 1); if distance ≤ `dedup_distance_threshold`
+  (default 0.15) the article is attached as a non-primary `StorySource` of that
+  story, otherwise a new `Story` is created with the article as primary.
+  Story `first/last_seen_at` window widened on attach. `flush()` per article
+  so within-run assignments are matchable. `deduplicate_articles(db)` processes
+  all unassigned (embedding set, no story); pass an explicit `articles` list to
+  scope (used for test isolation) — matching always searches all assigned
+  articles so new items merge into pre-existing stories.
+  Validated: deterministic test (2 near-identical + 1 distinct → 1 story with
+  2 sources + 1 separate story, exactly 1 primary). On the 15 real articles at
+  threshold 0.15 → 15 stories, 0 false merges (nearest ~0.22 > threshold).
 
 ## Database Schema Decisions
 
@@ -141,6 +156,7 @@ Managed via `backend/.env` (template: `backend/.env.example`):
 | `EMBEDDING_DIM` | 1536 | Vector dimension (structural; shared) |
 | `EMBEDDING_BATCH_SIZE` | 100 | Texts per embed API call / DB commit |
 | `EMBEDDING_INPUT_MAX_CHARS` | 8000 | Max chars of article text per embed |
+| `DEDUP_DISTANCE_THRESHOLD` | 0.15 | Max cosine distance to merge articles |
 | `GEMINI_API_KEY` | _(empty)_ | Gemini free-tier key (active) |
 | `GEMINI_EMBEDDING_MODEL` | gemini-embedding-001 | Gemini embedding model |
 | `GEMINI_CHAT_MODEL` | gemini-2.0-flash | Gemini chat model |
