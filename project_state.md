@@ -4,7 +4,8 @@ _Last updated: 2026-05-30_
 
 ## Current Milestone
 
-**Milestone 11 — Scheduling** (awaiting user validation)
+**Milestone 12 — API Layer** (awaiting user validation) — final core milestone.
+Only Milestone 13 (Deployment Preparation) remains.
 
 ## Completed Milestones
 
@@ -29,10 +30,11 @@ _Last updated: 2026-05-30_
   all 5 categories)
 - **Milestone 10 — Weekly Report Generation** ✅ (committed `bce0be5`; real
   report with all 5 sections persisted)
+- **Milestone 11 — Scheduling** ✅ (committed `0fa5b92`; task executed via
+  worker through the broker; beat running)
 
 ## Pending Milestones
 
-- Milestone 12 — API Layer
 - Milestone 13 — Deployment Preparation
 
 ## Architecture Decisions
@@ -151,6 +153,15 @@ _Last updated: 2026-05-30_
   (`celery … worker`) and `beat` (`celery … beat`) services reusing the api
   image. celery pinned at 5.6.3. Validated: task sent through the broker was
   received + succeeded on the worker; beat runs with the schedule loaded.
+- **API layer:** routers in `app/api/` wired in `main.py`. `GET /health` +
+  `/health/ready` (M1); `GET /reports` (paginated summaries), `GET
+  /reports/latest` (full Markdown; 404 if none — defined before `/{id}` so
+  "latest" isn't parsed as an id), `GET /reports/{id}`; `GET /stories`
+  (paginated, optional `category` filter, each with source articles via
+  `selectinload`, primary source first). Response schemas in
+  `app/api/schemas.py` (`from_attributes` for reports; stories built
+  manually for nested sources + source_count). Validated via TestClient
+  (isolated inserts) and live curl against all endpoints.
 
 - Postgres image is `pgvector/pgvector:pg16` so the `vector` extension is
   available without a custom build (used from Milestone 3 onward).

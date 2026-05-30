@@ -37,7 +37,7 @@ def test_build_user_prompt_includes_sections_and_stories():
     assert "TC" in prompt
 
 
-def _cleanup(db):
+def _cleanup(db, report_ids=None):
     stories = db.query(Story).filter(Story.title == _TEST_TITLE).all()
     ids = [s.id for s in stories]
     if ids:
@@ -46,13 +46,19 @@ def _cleanup(db):
         )
         db.query(Story).filter(Story.id.in_(ids)).delete(synchronize_session=False)
     db.query(Article).filter(Article.title == _TEST_TITLE).delete()
-    db.query(Report).filter(Report.title.like("AI Weekly Report —%")).delete()
+    # Only delete reports this test created (do NOT touch real reports, which
+    # share the standard "AI Weekly Report — ..." title).
+    if report_ids:
+        db.query(Report).filter(Report.id.in_(report_ids)).delete(
+            synchronize_session=False
+        )
     db.commit()
 
 
 def test_generate_weekly_report_persists_markdown():
     db = SessionLocal()
     now = datetime.now(timezone.utc)
+    created_report_ids = []
     try:
         _cleanup(db)
 
@@ -71,6 +77,7 @@ def test_generate_weekly_report_persists_markdown():
 
         fake = FakeLLM()
         report = generate_weekly_report(db, provider=fake)
+        created_report_ids.append(report.id)
 
         # Persisted with a real id and the generated Markdown.
         assert report.id is not None
@@ -86,5 +93,5 @@ def test_generate_weekly_report_persists_markdown():
         again = db.get(Report, report.id)
         assert again is not None and again.content == report.content
     finally:
-        _cleanup(db)
+        _cleanup(db, report_ids=created_report_ids)
         db.close()
