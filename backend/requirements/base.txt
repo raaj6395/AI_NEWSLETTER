@@ -23,3 +23,6 @@ httpx==0.28.1
 
 # Embedding provider — Gemini free tier (Milestone 6)
 google-genai==2.7.0
+
+# Workflow orchestration (Milestone 8)
+langgraph==1.2.2

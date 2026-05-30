@@ -4,7 +4,7 @@ _Last updated: 2026-05-30_
 
 ## Current Milestone
 
-**Milestone 7 — Deduplication Engine** (awaiting user validation)
+**Milestone 8 — LangGraph Daily Workflow** (awaiting user validation)
 
 ## Completed Milestones
 
@@ -21,10 +21,11 @@ _Last updated: 2026-05-30_
   articles ingested, re-run idempotent)
 - **Milestone 6 — Embedding Pipeline** ✅ (committed `a6596fc`; 15 articles
   embedded via Gemini, 1536-dim, real cosine distances)
+- **Milestone 7 — Deduplication Engine** ✅ (committed `20b8dc0`; deterministic
+  merge test + real run with no false merges)
 
 ## Pending Milestones
 
-- Milestone 8 — LangGraph Daily Workflow
 - Milestone 9 — Weekly Clustering
 - Milestone 10 — Weekly Report Generation
 - Milestone 11 — Scheduling
@@ -104,6 +105,15 @@ _Last updated: 2026-05-30_
   Validated: deterministic test (2 near-identical + 1 distinct → 1 story with
   2 sources + 1 separate story, exactly 1 primary). On the 15 real articles at
   threshold 0.15 → 15 stories, 0 false merges (nearest ~0.22 > threshold).
+- **LangGraph daily workflow:** `app/graphs/daily_workflow.py`. A compiled
+  `StateGraph[DailyWorkflowState]` with nodes fetch → ingest → embed →
+  deduplicate (START→…→END). Each node opens its own `SessionLocal` and reuses
+  a service from M4–M7 (pure orchestration; no business logic in the graph).
+  Realizes the milestone's Fetch→Normalize→Embed→Deduplicate→Save where
+  Normalize+Save = the ingest step, run before Embed/Dedup since those operate
+  on persisted rows. `run_daily_workflow(query, limit)` invokes it and returns
+  per-step count summary. langgraph pinned at 1.2.2. Validated end-to-end:
+  fetched 30 → saved 15 → embedded 15 → 13 stories created + 2 sources merged.
 
 ## Database Schema Decisions
 
