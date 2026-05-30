@@ -14,7 +14,7 @@ The platform will:
 6. Generate weekly AI reports.
 7. Expose APIs for accessing reports.
 8. Run locally with Docker.
-9. Deploy later using free tiers such as Render and Vercel.
+9. Deploy later (target platform to be decided — not committed to Render or Vercel yet).
 
 ---
 
@@ -118,8 +118,7 @@ Testing:
 
 Deployment:
 
-* Render
-* Vercel
+* To be decided (verify and harden locally first; platform not chosen yet)
 
 LLM Provider:
 
@@ -450,17 +449,21 @@ Deployment Preparation
 
 ### Goal
 
-Prepare:
+Deferred. Before any deployment work:
 
-Render deployment
+* Verify the full pipeline locally end-to-end.
+* Improve / harden the existing milestones.
 
-Vercel deployment
+Once ready, decide on a deployment platform (NOT necessarily Render or Vercel)
+and then prepare:
 
-Environment configuration
+* Platform deployment configuration
+* Environment configuration
+* Deployment documentation
 
 ### Validation
 
-Deployment documentation generated.
+To be defined when the deployment platform is chosen.
 
 Stop after completion.
 
