@@ -26,3 +26,6 @@ google-genai==2.7.0
 
 # Workflow orchestration (Milestone 8)
 langgraph==1.2.2
+
+# Task queue / scheduling (Milestone 11)
+celery[redis]==5.6.3

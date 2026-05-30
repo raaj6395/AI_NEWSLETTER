@@ -67,6 +67,16 @@ class Settings(BaseSettings):
     # Stories with last_seen_at within this many days count as "this week".
     weekly_window_days: int = Field(default=7)
 
+    # --- Scheduling (Milestone 11) ---
+    # Celery Beat cron settings (UTC). Daily ingestion + weekly report.
+    daily_ingestion_hour: int = Field(default=6)
+    daily_ingestion_minute: int = Field(default=0)
+    weekly_report_day_of_week: str = Field(default="mon")
+    weekly_report_hour: int = Field(default=7)
+    weekly_report_minute: int = Field(default=0)
+    # Default per-provider fetch cap for the scheduled daily job.
+    scheduled_fetch_limit: int = Field(default=50)
+
     # Gemini (Google AI Studio free tier) — active now.
     gemini_api_key: str = Field(default="")
     gemini_embedding_model: str = Field(default="gemini-embedding-001")

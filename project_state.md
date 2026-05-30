@@ -4,7 +4,7 @@ _Last updated: 2026-05-30_
 
 ## Current Milestone
 
-**Milestone 10 — Weekly Report Generation** (awaiting user validation)
+**Milestone 11 — Scheduling** (awaiting user validation)
 
 ## Completed Milestones
 
@@ -27,10 +27,11 @@ _Last updated: 2026-05-30_
   runs end-to-end and is idempotent)
 - **Milestone 9 — Weekly Clustering** ✅ (committed `88172b1`; 23 stories →
   all 5 categories)
+- **Milestone 10 — Weekly Report Generation** ✅ (committed `bce0be5`; real
+  report with all 5 sections persisted)
 
 ## Pending Milestones
 
-- Milestone 11 — Scheduling
 - Milestone 12 — API Layer
 - Milestone 13 — Deployment Preparation
 
@@ -142,6 +143,14 @@ _Last updated: 2026-05-30_
 - **Gemini chat model = `gemini-2.5-flash`.** `gemini-2.0-flash` returned
   free-tier quota 0 for generate_content on this key (embeddings unaffected);
   2.5-flash has free quota. Switched the default.
+- **Scheduling (Celery + Redis):** `app/workers/celery_app.py` (broker+backend
+  = Redis) and `app/workers/tasks.py`. Tasks: `tasks.daily_ingestion`
+  (runs the LangGraph daily workflow) and `tasks.weekly_report` (cluster →
+  generate+persist report). Beat schedule (UTC, configurable via settings):
+  daily ingestion at 06:00, weekly report Mon 07:00. Compose adds `worker`
+  (`celery … worker`) and `beat` (`celery … beat`) services reusing the api
+  image. celery pinned at 5.6.3. Validated: task sent through the broker was
+  received + succeeded on the worker; beat runs with the schedule loaded.
 
 - Postgres image is `pgvector/pgvector:pg16` so the `vector` extension is
   available without a custom build (used from Milestone 3 onward).
@@ -198,6 +207,10 @@ Managed via `backend/.env` (template: `backend/.env.example`):
 | `EMBEDDING_INPUT_MAX_CHARS` | 8000 | Max chars of article text per embed |
 | `DEDUP_DISTANCE_THRESHOLD` | 0.15 | Max cosine distance to merge articles |
 | `WEEKLY_WINDOW_DAYS` | 7 | Window for weekly clustering / report |
+| `DAILY_INGESTION_HOUR` / `_MINUTE` | 6 / 0 | Beat: daily ingestion time (UTC) |
+| `WEEKLY_REPORT_DAY_OF_WEEK` | mon | Beat: weekly report day |
+| `WEEKLY_REPORT_HOUR` / `_MINUTE` | 7 / 0 | Beat: weekly report time (UTC) |
+| `SCHEDULED_FETCH_LIMIT` | 50 | Per-provider cap for the scheduled daily job |
 | `GEMINI_API_KEY` | _(empty)_ | Gemini free-tier key (active) |
 | `GEMINI_EMBEDDING_MODEL` | gemini-embedding-001 | Gemini embedding model |
 | `GEMINI_CHAT_MODEL` | gemini-2.5-flash | Gemini chat model (2.0-flash had 0 free quota) |
