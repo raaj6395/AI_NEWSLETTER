@@ -4,16 +4,17 @@ _Last updated: 2026-05-30_
 
 ## Current Milestone
 
-**Milestone 2 — Database Layer** (awaiting user validation)
+**Milestone 3 — pgvector Integration** (awaiting user validation)
 
 ## Completed Milestones
 
 - **Milestone 1 — Project Bootstrap** ✅ (validated: containers up, `/health`
   and `/health/ready` return ok)
+- **Milestone 2 — Database Layer** ✅ (committed `dc5e1b5`; tables migrated,
+  downgrade/upgrade roundtrip verified)
 
 ## Pending Milestones
 
-- Milestone 3 — pgvector Integration
 - Milestone 4 — News Source Framework (RSS, NewsAPI, GNews adapters)
 - Milestone 5 — Ingestion Pipeline (Fetch → Normalize → Save)
 - Milestone 6 — Embedding Pipeline
@@ -63,6 +64,14 @@ _Last updated: 2026-05-30_
     article_id)` prevents dup pairs; both FKs `ON DELETE CASCADE`.
 - **Relationship model:** story↔article handled solely through `story_sources`
   (no `story_id` on `articles`) to avoid two competing sources of truth.
+- **pgvector (migration `b7f9ed6623f0`):** `CREATE EXTENSION vector` (v0.8.2),
+  `articles.embedding vector(1536)` (nullable), and an HNSW index
+  `ix_articles_embedding_hnsw` using `vector_cosine_ops` (m=16,
+  ef_construction=64) for cosine ANN search via the `<=>` operator.
+  Dimension 1536 matches `text-embedding-3-small`; sourced from
+  `Settings.embedding_dim` via the `EMBEDDING_DIM` constant in the model.
+  Verified: insert/retrieve of 1536-dim vectors and a cosine-distance
+  nearest-neighbour ordering all work.
 
 ## Known Issues
 

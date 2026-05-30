@@ -2,11 +2,17 @@
 
 from datetime import datetime
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import DateTime, Index, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.config import get_settings
 from app.db.base import Base
+
+# Vector dimension is structural (changing it requires a migration), so it is
+# read once from settings — the default matches OpenAI text-embedding-3-small.
+EMBEDDING_DIM = get_settings().embedding_dim
 
 
 class Article(Base):
@@ -31,7 +37,11 @@ class Article(Base):
     # Original provider payload, kept for traceability / reprocessing.
     raw: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    # NOTE: an `embedding` vector column is added in Milestone 3 (pgvector).
+    # Semantic embedding of the article (pgvector). Populated by the embedding
+    # pipeline in Milestone 6; used for dedup/similarity from Milestone 7.
+    embedding: Mapped[list[float] | None] = mapped_column(
+        Vector(EMBEDDING_DIM), nullable=True
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

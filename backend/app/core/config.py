@@ -36,8 +36,10 @@ class Settings(BaseSettings):
     redis_port: int = Field(default=6379)
     redis_db: int = Field(default=0)
 
-    # --- OpenAI (used from Milestone 6 onward) ---
+    # --- OpenAI / embeddings (used from Milestone 6 onward) ---
     openai_api_key: str = Field(default="")
+    embedding_model: str = Field(default="text-embedding-3-small")
+    embedding_dim: int = Field(default=1536)
 
     @property
     def database_url(self) -> str:
