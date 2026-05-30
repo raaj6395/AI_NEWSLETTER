@@ -4,7 +4,7 @@ _Last updated: 2026-05-30_
 
 ## Current Milestone
 
-**Milestone 5 — Ingestion Pipeline** (awaiting user validation)
+**Milestone 6 — Embedding Pipeline** (awaiting user validation)
 
 ## Completed Milestones
 
@@ -17,10 +17,11 @@ _Last updated: 2026-05-30_
 - **Milestone 4 — News Source Framework** ✅ (committed `f5daca8`; adapter
   pattern, `fetch_news()` validated live against RSS). Same commit set the
   AI provider to Gemini free tier.
+- **Milestone 5 — Ingestion Pipeline** ✅ (committed `c8c05d4`; 15 real
+  articles ingested, re-run idempotent)
 
 ## Pending Milestones
 
-- Milestone 6 — Embedding Pipeline
 - Milestone 7 — Deduplication Engine
 - Milestone 8 — LangGraph Daily Workflow
 - Milestone 9 — Weekly Clustering
@@ -76,6 +77,18 @@ _Last updated: 2026-05-30_
   fetch → normalize → save. Embeddings left NULL (filled in M6). Single-job
   use assumed; check-then-insert (no concurrent-run guard yet). Validated:
   15 real articles saved, re-run saved 0.
+- **Embedding pipeline (provider-agnostic):** `app/services/embeddings/`
+  defines `EmbeddingProvider` (returns unit-normalized vectors), with
+  `GeminiEmbeddingProvider` (google-genai `embed_content`, explicit
+  `output_dimensionality=1536`, `SEMANTIC_SIMILARITY` task) and a lazy-import
+  `OpenAIEmbeddingProvider` for later. `get_embedding_provider()` picks by
+  `embedding_provider`. `app/services/embedding_pipeline.py`:
+  `build_embedding_input()` (title + description/content, truncated to
+  `embedding_input_max_chars`), `embed_articles()` (embed an explicit list,
+  per-batch failure isolation, commit per batch), and `embed_pending_articles()`
+  (queries `embedding IS NULL` then delegates). Vectors L2-normalized.
+  Validated: all 15 articles embedded via Gemini (1536-dim), real cosine
+  distances (~0.22). google-genai pinned at 2.7.0.
 
 ## Database Schema Decisions
 
@@ -126,6 +139,8 @@ Managed via `backend/.env` (template: `backend/.env.example`):
 | `EMBEDDING_PROVIDER` | gemini | Active embedding provider (gemini/openai) |
 | `LLM_PROVIDER` | gemini | Active LLM provider (gemini/openai) |
 | `EMBEDDING_DIM` | 1536 | Vector dimension (structural; shared) |
+| `EMBEDDING_BATCH_SIZE` | 100 | Texts per embed API call / DB commit |
+| `EMBEDDING_INPUT_MAX_CHARS` | 8000 | Max chars of article text per embed |
 | `GEMINI_API_KEY` | _(empty)_ | Gemini free-tier key (active) |
 | `GEMINI_EMBEDDING_MODEL` | gemini-embedding-001 | Gemini embedding model |
 | `GEMINI_CHAT_MODEL` | gemini-2.0-flash | Gemini chat model |

@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     # compatible across providers: Gemini's gemini-embedding-001 emits 1536 on
     # request, matching OpenAI's text-embedding-3-small (no migration on switch).
     embedding_dim: int = Field(default=1536)
+    # Texts embedded per API call / DB commit during the embedding pipeline.
+    embedding_batch_size: int = Field(default=100)
+    # Max characters of article text sent to the embedding model.
+    embedding_input_max_chars: int = Field(default=8000)
 
     # Gemini (Google AI Studio free tier) — active now.
     gemini_api_key: str = Field(default="")
