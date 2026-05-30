@@ -4,15 +4,15 @@ _Last updated: 2026-05-30_
 
 ## Current Milestone
 
-**Milestone 1 — Project Bootstrap** (awaiting user validation)
+**Milestone 2 — Database Layer** (awaiting user validation)
 
 ## Completed Milestones
 
-- _None yet confirmed._ Milestone 1 implemented, pending user confirmation.
+- **Milestone 1 — Project Bootstrap** ✅ (validated: containers up, `/health`
+  and `/health/ready` return ok)
 
 ## Pending Milestones
 
-- Milestone 2 — Database Layer (articles, stories, story_sources + Alembic)
 - Milestone 3 — pgvector Integration
 - Milestone 4 — News Source Framework (RSS, NewsAPI, GNews adapters)
 - Milestone 5 — Ingestion Pipeline (Fetch → Normalize → Save)
@@ -39,12 +39,30 @@ _Last updated: 2026-05-30_
   pings Postgres + Redis). Readiness is the Milestone 1 validation surface.
 - **Requirements split:** `requirements/base.txt` (runtime) and
   `requirements/dev.txt` (adds pytest, httpx).
+- **ORM:** SQLAlchemy 2.0 (typed `Mapped`/`mapped_column`), sync engine bound
+  to the psycopg v3 driver (`postgresql+psycopg://`). Shared `Base`, `engine`,
+  `SessionLocal`, and a `get_db()` dependency live in `app/db/base.py`.
+- **Migrations:** Alembic. `alembic.ini` has `script_location = migrations`;
+  `migrations/env.py` injects the DB URL from settings and targets
+  `Base.metadata` with all models imported (so autogenerate sees them).
+- **Dev mount:** the `api` service mounts `.:/app` so code changes and
+  generated migration files persist to the host without rebuilding.
 
 ## Database Schema Decisions
 
 - Postgres image is `pgvector/pgvector:pg16` so the `vector` extension is
   available without a custom build (used from Milestone 3 onward).
-- No tables yet — schema and Alembic migrations land in Milestone 2.
+- **Tables (initial migration `71636b66f5e3`):**
+  - `articles` — fetched news items. `url` UNIQUE (exact-dup key); indexed on
+    `source` and `published_at`; `raw` JSONB keeps the original payload.
+    (An `embedding` vector column is added in Milestone 3.)
+  - `stories` — canonical aggregated stories. `category` (filled M9),
+    `first_seen_at`/`last_seen_at`; indexed on `category`, `last_seen_at`.
+  - `story_sources` — association of a story to its source articles.
+    `UNIQUE(article_id)` enforces one story per article; `UNIQUE(story_id,
+    article_id)` prevents dup pairs; both FKs `ON DELETE CASCADE`.
+- **Relationship model:** story↔article handled solely through `story_sources`
+  (no `story_id` on `articles`) to avoid two competing sources of truth.
 
 ## Known Issues
 

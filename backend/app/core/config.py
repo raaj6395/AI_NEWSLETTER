@@ -41,8 +41,17 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
+        """libpq-style URL, used by psycopg directly (e.g. health check)."""
         return (
             f"postgresql://{self.postgres_user}:{self.postgres_password}"
+            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        )
+
+    @property
+    def sqlalchemy_database_url(self) -> str:
+        """SQLAlchemy URL bound to the psycopg (v3) driver."""
+        return (
+            f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
 

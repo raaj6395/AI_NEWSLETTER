@@ -41,6 +41,10 @@ services:
       # Override hosts so the API talks to the compose service names.
       POSTGRES_HOST: db
       REDIS_HOST: redis
+    volumes:
+      # Live-mount source for development and so Alembic migrations
+      # (generated/applied inside the container) persist to the host.
+      - .:/app
     ports:
       - "8000:8000"
     depends_on:
