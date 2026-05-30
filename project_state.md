@@ -4,7 +4,7 @@ _Last updated: 2026-05-30_
 
 ## Current Milestone
 
-**Milestone 3 — pgvector Integration** (awaiting user validation)
+**Milestone 4 — News Source Framework** (awaiting user validation)
 
 ## Completed Milestones
 
@@ -12,10 +12,11 @@ _Last updated: 2026-05-30_
   and `/health/ready` return ok)
 - **Milestone 2 — Database Layer** ✅ (committed `dc5e1b5`; tables migrated,
   downgrade/upgrade roundtrip verified)
+- **Milestone 3 — pgvector Integration** ✅ (committed `7ffad2b`; extension
+  enabled, embedding column + HNSW index, similarity verified)
 
 ## Pending Milestones
 
-- Milestone 4 — News Source Framework (RSS, NewsAPI, GNews adapters)
 - Milestone 5 — Ingestion Pipeline (Fetch → Normalize → Save)
 - Milestone 6 — Embedding Pipeline
 - Milestone 7 — Deduplication Engine
@@ -28,6 +29,14 @@ _Last updated: 2026-05-30_
 
 ## Architecture Decisions
 
+- **AI provider (Gemini now, OpenAI later):** `embedding_provider` /
+  `llm_provider` settings select the active provider; both Gemini and OpenAI
+  settings are present. Currently **Gemini free tier** (`gemini-embedding-001`
+  for embeddings, `gemini-2.0-flash` for chat). `embedding_dim` is fixed at
+  **1536** so the `articles.embedding vector(1536)` column and HNSW index are
+  identical across providers — Gemini emits 1536-dim vectors on request and
+  OpenAI `text-embedding-3-small` is natively 1536, so switching providers
+  needs **no migration**. Provider client wiring lands with Milestone 6.
 - **Layout:** All backend code lives under `backend/` following the prescribed
   structure (`app/{api,core,db,models,services,workers,graphs,prompts}`,
   `tests/`, `migrations/`, `docker/`, `requirements/`).
@@ -48,6 +57,14 @@ _Last updated: 2026-05-30_
   `Base.metadata` with all models imported (so autogenerate sees them).
 - **Dev mount:** the `api` service mounts `.:/app` so code changes and
   generated migration files persist to the host without rebuilding.
+- **News framework (adapter pattern):** lives in `app/services/news/`.
+  `NewsProvider` (ABC) defines `_fetch()`; `fetch()` wraps it so one provider's
+  failure can't abort the batch. Adapters: `RSSProvider` (feedparser, no key),
+  `NewsAPIProvider`, `GNewsProvider` (httpx). All emit a normalized
+  `FetchedArticle` (pydantic) — distinct from the `Article` ORM model.
+  `build_providers()` enables providers from config (RSS if feeds set; NewsAPI/
+  GNews only if their key is set). `fetch_news()` runs all enabled providers
+  and de-duplicates by URL. Validated live: RSS returned real articles.
 
 ## Database Schema Decisions
 
@@ -95,4 +112,18 @@ Managed via `backend/.env` (template: `backend/.env.example`):
 | `REDIS_HOST` | localhost (`redis` in compose) | Redis host |
 | `REDIS_PORT` | 6379 | Redis port |
 | `REDIS_DB` | 0 | Redis logical DB |
-| `OPENAI_API_KEY` | _(empty)_ | Required from Milestone 6 |
+| `EMBEDDING_PROVIDER` | gemini | Active embedding provider (gemini/openai) |
+| `LLM_PROVIDER` | gemini | Active LLM provider (gemini/openai) |
+| `EMBEDDING_DIM` | 1536 | Vector dimension (structural; shared) |
+| `GEMINI_API_KEY` | _(empty)_ | Gemini free-tier key (active) |
+| `GEMINI_EMBEDDING_MODEL` | gemini-embedding-001 | Gemini embedding model |
+| `GEMINI_CHAT_MODEL` | gemini-2.0-flash | Gemini chat model |
+| `OPENAI_API_KEY` | _(empty)_ | OpenAI key (for later switch) |
+| `OPENAI_EMBEDDING_MODEL` | text-embedding-3-small | OpenAI embedding model |
+| `OPENAI_CHAT_MODEL` | gpt-4o-mini | OpenAI chat model |
+| `NEWS_QUERY` | artificial intelligence | Default search query |
+| `FETCH_MAX_PER_PROVIDER` | 50 | Max articles per provider per run |
+| `RSS_FEEDS` | _(3 AI feeds)_ | JSON list override for RSS feeds |
+| `NEWSAPI_API_KEY` | _(empty)_ | Enables NewsAPI when set |
+| `GNEWS_API_KEY` | _(empty)_ | Enables GNews when set |
+| `HTTP_TIMEOUT_SECONDS` | 15 | HTTP client timeout |

@@ -10,6 +10,14 @@ from functools import lru_cache
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Default RSS feeds focused on AI / tech news. Overridable via the RSS_FEEDS
+# environment variable (JSON list).
+DEFAULT_RSS_FEEDS = [
+    "https://techcrunch.com/category/artificial-intelligence/feed/",
+    "https://www.wired.com/feed/tag/ai/latest/rss",
+    "https://feeds.arstechnica.com/arstechnica/technology-lab",
+]
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -36,10 +44,33 @@ class Settings(BaseSettings):
     redis_port: int = Field(default=6379)
     redis_db: int = Field(default=0)
 
-    # --- OpenAI / embeddings (used from Milestone 6 onward) ---
-    openai_api_key: str = Field(default="")
-    embedding_model: str = Field(default="text-embedding-3-small")
+    # --- AI providers (embeddings + LLM; used from Milestone 6 onward) ---
+    # Active provider — currently Gemini free tier; switch to "openai" later.
+    embedding_provider: str = Field(default="gemini")  # "gemini" | "openai"
+    llm_provider: str = Field(default="gemini")  # "gemini" | "openai"
+
+    # Shared vector dimension. Kept at 1536 so the pgvector column is
+    # compatible across providers: Gemini's gemini-embedding-001 emits 1536 on
+    # request, matching OpenAI's text-embedding-3-small (no migration on switch).
     embedding_dim: int = Field(default=1536)
+
+    # Gemini (Google AI Studio free tier) — active now.
+    gemini_api_key: str = Field(default="")
+    gemini_embedding_model: str = Field(default="gemini-embedding-001")
+    gemini_chat_model: str = Field(default="gemini-2.0-flash")
+
+    # OpenAI — wired up for a later switch.
+    openai_api_key: str = Field(default="")
+    openai_embedding_model: str = Field(default="text-embedding-3-small")
+    openai_chat_model: str = Field(default="gpt-4o-mini")
+
+    # --- News providers (Milestone 4) ---
+    news_query: str = Field(default="artificial intelligence")
+    fetch_max_per_provider: int = Field(default=50)
+    rss_feeds: list[str] = Field(default_factory=lambda: list(DEFAULT_RSS_FEEDS))
+    newsapi_api_key: str = Field(default="")
+    gnews_api_key: str = Field(default="")
+    http_timeout_seconds: float = Field(default=15.0)
 
     @property
     def database_url(self) -> str:
