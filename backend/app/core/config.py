@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     # Gemini (Google AI Studio free tier) — active now.
     gemini_api_key: str = Field(default="")
     gemini_embedding_model: str = Field(default="gemini-embedding-001")
-    gemini_chat_model: str = Field(default="gemini-2.0-flash")
+    gemini_chat_model: str = Field(default="gemini-2.5-flash")
 
     # OpenAI — wired up for a later switch.
     openai_api_key: str = Field(default="")

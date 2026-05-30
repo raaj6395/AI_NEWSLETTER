@@ -4,7 +4,7 @@ _Last updated: 2026-05-30_
 
 ## Current Milestone
 
-**Milestone 9 — Weekly Clustering** (awaiting user validation)
+**Milestone 10 — Weekly Report Generation** (awaiting user validation)
 
 ## Completed Milestones
 
@@ -25,10 +25,11 @@ _Last updated: 2026-05-30_
   merge test + real run with no false merges)
 - **Milestone 8 — LangGraph Daily Workflow** ✅ (committed `af084b9`; graph
   runs end-to-end and is idempotent)
+- **Milestone 9 — Weekly Clustering** ✅ (committed `88172b1`; 23 stories →
+  all 5 categories)
 
 ## Pending Milestones
 
-- Milestone 10 — Weekly Report Generation
 - Milestone 11 — Scheduling
 - Milestone 12 — API Layer
 - Milestone 13 — Deployment Preparation
@@ -126,8 +127,21 @@ _Last updated: 2026-05-30_
   list for test isolation. Chosen over per-story LLM calls (free, deterministic,
   reuses embeddings). Validated: 23 real stories → all 5 categories
   (OpenAI 7 / Anthropic 1 / Funding 1 / Research 2 / Startups 12).
-
-## Database Schema Decisions
+- **LLM provider abstraction:** `app/services/llm/` mirrors the embeddings
+  design — `LLMProvider.generate(prompt, system)`, `GeminiLLMProvider`
+  (google-genai `generate_content`) and lazy `OpenAILLMProvider`,
+  `get_llm_provider()` selects by `llm_provider`.
+- **Weekly report:** `app/services/report.py` + prompt in
+  `app/prompts/weekly_report.py`. `gather_weekly_context()` collects weekly
+  stories grouped by clustering category (with source outlets);
+  `generate_weekly_report()` builds the prompt (fixed sections: Major
+  Headlines, Research, Funding, New Models, Outlook), calls the LLM, and
+  persists a `Report` row (title, Markdown content, week window, story_count).
+  Accepts an injectable provider for tests. Validated: real report (id=2,
+  23 stories, all 5 sections) generated via Gemini.
+- **Gemini chat model = `gemini-2.5-flash`.** `gemini-2.0-flash` returned
+  free-tier quota 0 for generate_content on this key (embeddings unaffected);
+  2.5-flash has free quota. Switched the default.
 
 - Postgres image is `pgvector/pgvector:pg16` so the `vector` extension is
   available without a custom build (used from Milestone 3 onward).
@@ -142,6 +156,10 @@ _Last updated: 2026-05-30_
     article_id)` prevents dup pairs; both FKs `ON DELETE CASCADE`.
 - **Relationship model:** story↔article handled solely through `story_sources`
   (no `story_id` on `articles`) to avoid two competing sources of truth.
+- **reports** (migration `4226f6cde25c`) — generated weekly reports: `title`,
+  `content` (Markdown), `week_start`/`week_end`, `story_count`, `created_at`
+  (indexed). NOTE: the migration was hand-corrected to NOT drop the HNSW index
+  (autogenerate proposed dropping it since it isn't declared on the model).
 - **pgvector (migration `b7f9ed6623f0`):** `CREATE EXTENSION vector` (v0.8.2),
   `articles.embedding vector(1536)` (nullable), and an HNSW index
   `ix_articles_embedding_hnsw` using `vector_cosine_ops` (m=16,
@@ -182,7 +200,7 @@ Managed via `backend/.env` (template: `backend/.env.example`):
 | `WEEKLY_WINDOW_DAYS` | 7 | Window for weekly clustering / report |
 | `GEMINI_API_KEY` | _(empty)_ | Gemini free-tier key (active) |
 | `GEMINI_EMBEDDING_MODEL` | gemini-embedding-001 | Gemini embedding model |
-| `GEMINI_CHAT_MODEL` | gemini-2.0-flash | Gemini chat model |
+| `GEMINI_CHAT_MODEL` | gemini-2.5-flash | Gemini chat model (2.0-flash had 0 free quota) |
 | `OPENAI_API_KEY` | _(empty)_ | OpenAI key (for later switch) |
 | `OPENAI_EMBEDDING_MODEL` | text-embedding-3-small | OpenAI embedding model |
 | `OPENAI_CHAT_MODEL` | gpt-4o-mini | OpenAI chat model |
