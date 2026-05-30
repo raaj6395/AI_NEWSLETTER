@@ -4,7 +4,7 @@ _Last updated: 2026-05-30_
 
 ## Current Milestone
 
-**Milestone 4 — News Source Framework** (awaiting user validation)
+**Milestone 5 — Ingestion Pipeline** (awaiting user validation)
 
 ## Completed Milestones
 
@@ -14,10 +14,12 @@ _Last updated: 2026-05-30_
   downgrade/upgrade roundtrip verified)
 - **Milestone 3 — pgvector Integration** ✅ (committed `7ffad2b`; extension
   enabled, embedding column + HNSW index, similarity verified)
+- **Milestone 4 — News Source Framework** ✅ (committed `f5daca8`; adapter
+  pattern, `fetch_news()` validated live against RSS). Same commit set the
+  AI provider to Gemini free tier.
 
 ## Pending Milestones
 
-- Milestone 5 — Ingestion Pipeline (Fetch → Normalize → Save)
 - Milestone 6 — Embedding Pipeline
 - Milestone 7 — Deduplication Engine
 - Milestone 8 — LangGraph Daily Workflow
@@ -65,6 +67,15 @@ _Last updated: 2026-05-30_
   `build_providers()` enables providers from config (RSS if feeds set; NewsAPI/
   GNews only if their key is set). `fetch_news()` runs all enabled providers
   and de-duplicates by URL. Validated live: RSS returned real articles.
+- **Ingestion pipeline:** `app/services/ingestion.py`. `normalize()` maps a
+  `FetchedArticle` onto `Article` columns (truncates `source`/`author` to 255;
+  makes `raw` JSON-safe for JSONB via `json.dumps(..., default=str)`).
+  `save_articles()` de-dups by URL within the batch and against existing rows,
+  bulk-inserts the new ones, and returns an `IngestionResult`
+  (fetched/unique/saved/duplicates). `ingest_news(db)` chains
+  fetch → normalize → save. Embeddings left NULL (filled in M6). Single-job
+  use assumed; check-then-insert (no concurrent-run guard yet). Validated:
+  15 real articles saved, re-run saved 0.
 
 ## Database Schema Decisions
 
